@@ -1,0 +1,226 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          firewall-iptables
+# Required-Start:    networking network-manager
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: a basic iptbales firewall, and port forwarding.
+# Description: Mostly copied from David A. Ranch (http://www.ecst.csuchico.edu/~dranch). Rewritten here as an debian Linux init script.
+#              You'll probably have to edit port list, and interface names in this file.
+### END INIT INFO
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Basic iptables firewall"
+NAME=firewall-iptables
+DAEMON=/usr/sbin/$NAME
+DAEMON_ARGS="--options args"
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+. /lib/lsb/init-functions
+
+# The location of various iptables and other shell programs
+IPTABLES=/sbin/iptables
+FWVER=0.76
+IPTABLES=/sbin/iptables
+
+#Setting the EXTERNAL and INTERNAL interfaces for the network
+#
+#  Each IP Masquerade network needs to have at least one
+#  external and one internal network.  The external network
+#  is where the natting will occur and the internal network
+#  should preferably be addressed with a RFC1918 private address scheme.
+#  If you are a PPPoE or analog modem user: EXTIF="ppp0" 
+#
+EXTIF="wlan0"
+INTIF="eth0"
+
+# 27/02/12 added bootp (bootps), dhcp (bootpc), domain (dns) for testing
+INBOUND_TCP_ALLOW="ssh,http,https,5900,5901,domain,111,2049"
+INBOUND_UDP_ALLOW="domain,111,2049,bootpc,bootps"
+
+# Check that networking is up.
+[[ "${NETWORKING}" = "no" ]] && exit 0
+
+[[ -x /sbin/ifconfig ]] || exit 0
+
+
+# Set the out of the box default iptables policy.
+# Actually really shouldnt do this. 
+# What we want is for diff programs to be able to use iptables concurrently,
+# but iptables not really designed that way, so we have to.
+# 
+function set_default_policy()
+{
+  iptables -P INPUT ACCEPT
+  iptables -F INPUT
+  iptables -P OUTPUT ACCEPT
+  iptables -F OUTPUT
+  iptables -P FORWARD DROP
+  iptables -F FORWARD
+  iptables -t mangle -F
+  iptables -t mangle -X
+  iptables -t nat -F
+  iptables -t nat -X
+  iptables -t filter -F
+  iptables -t filter -X
+  iptables -t raw -F
+  iptables -t raw -X
+  # Reset all IPTABLES counters
+  iptables -Z
+}
+
+
+function do_start()
+{
+  echo "Starting simple firewall-iptables version $FWVER:"
+  echo "   External Interface:  $EXTIF"
+  echo "   Internal Interface:  $INTIF"
+  
+  # Enable IP forwarding since it is disabled by default since
+  # Redhat Users:  you may try changing the options in /etc/sysconfig/network from:
+  # FORWARD_IPV4=false to FORWARD_IPV4=true
+  #
+  echo "   Enabling forwarding.."
+  echo "1" > /proc/sys/net/ipv4/ip_forward
+
+  # Dynamic IP users:
+  # If you get your IP address dynamically from SLIP, PPP, or DHCP, 
+  # enable this following option.  This enables dynamic-address hacking
+  # which makes the life with Diald and similar programs much easier.
+  #
+  echo "   Enabling DynamicAddr.."
+  echo "1" > /proc/sys/net/ipv4/ip_dynaddr
+  
+  #echo "   Clearing any existing rules and setting default policy.."
+  #set_default_policy()
+  
+  #echo "Setting up firewall. Note $0 should run before all other programs that set iptables rules."
+  #echo "Except that still does not work because we want to change what on the end of the chains not just the starts."
+  $IPTABLES -P INPUT DROP
+ 
+  # Firewall 
+  $IPTABLES -A INPUT -m comment --comment "firewall-iptables firewall rules"
+  # We can talk to ourselves freely.
+  # Allow all outgoing connections we start.
+  # Allowing ssh, http, https, vnc - youll have to come and edit this as your firewall rules!
+  # TODO: allow ICMP from me to me
+  $IPTABLES -A INPUT -i lo -j ACCEPT
+  $IPTABLES -A INPUT -p icmp -j ACCEPT 
+  $IPTABLES -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+  # iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT
+  [[ -n $INBOUND_TCP_ALLOW ]] && iptables -A INPUT -p tcp -m multiport --destination-port $INBOUND_TCP_ALLOW -j ACCEPT
+  [[ -n $INBOUND_UDP_ALLOW ]] && iptables -A INPUT -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j ACCEPT  
+  # Fucking NFS! What port will satisfy you?!
+  iptables -A INPUT --src 192.168.0.0/24 -j ACCEPT
+  
+  # Forwarding rules
+  $IPTABLES -A INPUT -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF." 
+  echo "   Allowing all connections OUT and only existing and related ones IN"
+  $IPTABLES -A FORWARD -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
+  $IPTABLES -A FORWARD -i $INTIF -o $EXTIF -j ACCEPT
+  $IPTABLES -A FORWARD -j LOG 
+
+  echo "   Enabling SNAT (MASQUERADE) functionality on $EXTIF"
+  $IPTABLES -t nat -A POSTROUTING -o $EXTIF -j MASQUERADE
+  
+  # This should be at the eventual end of the chain...
+  # So you get a RST rather than nothing.
+  iptables -A INPUT -j REJECT
+  
+  echo -n "firewall-iptables v$FWVER done."
+  success
+  echo
+  return 0
+}
+
+function do_stop()
+{
+  echo "Stopping firewall-iptables:"
+  #no.
+  set_default_policy
+  echo -n "Warning: default permissive policy set."
+  success
+  echo
+  return 0
+}
+
+function do_restart()
+{
+  $0 stop
+  $0 start
+  return $?
+}
+
+function do_status()
+{
+  $IPTABLES -L
+  return 0
+}
+
+function success()
+{
+  echo -n ""
+}
+
+
+case "$1" in
+  start)
+	  [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	  do_start
+	  case "$?" in
+		  0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		  2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	  esac
+	;;
+  stop)
+	  [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+	  do_stop
+	  case "$?" in
+		  0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		  2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	  esac
+	;;
+  #status)
+  #  
+  #;;
+  restart|force-reload)
+	#
+	# If the "reload" option is implemented then remove the
+	# 'force-reload' alias
+	#
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_stop
+	case "$?" in
+	  0|1)
+		  do_start
+		  case "$?" in
+			  0) log_end_msg 0 ;;
+			  1) log_end_msg 1 ;; # Old process is still running
+			  *) log_end_msg 1 ;; # Failed to start
+		  esac
+		;;
+	  *)
+	  	# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  *)
+	  #echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+	  echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+	  exit 3
+	;;
+esac
+
+:
