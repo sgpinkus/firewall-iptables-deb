@@ -1,0 +1,5 @@
+firewall-iptables-deb (1.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- sam <sam@localhost>  Sun, 22 Sep 2013 04:35:08 -0400

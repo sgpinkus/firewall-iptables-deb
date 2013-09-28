@@ -1,0 +1,15 @@
+Source: firewall-iptables-deb
+Section: unknown
+Priority: extra
+Maintainer: sam <sam@localhost>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Git: git://git.debian.org/collab-maint/firewall-iptables-deb.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/firewall-iptables-deb.git;a=summary
+
+Package: firewall-iptables-deb
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
