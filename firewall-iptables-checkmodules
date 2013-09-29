@@ -1,7 +1,14 @@
 #!/bin/bash
-# This is the dep chekcing part of original iptables firewall from (?)
-# Dont really need it to be run with every enable/diable of firewall.
+# This is the dep checking part of original iptables firewall example script.
+# Does not need it to be run with every enable/disable of firewall as modules are auto loaded.
 #
+
+if [[ $EUID -ne 0 ]]
+then
+   echo "This script must be run as root. Exiting." 
+   exit 1
+fi
+
 
 echo -en "   loading modules: "
 

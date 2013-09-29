@@ -1,10 +1,6 @@
-#!/bin/sh
-# postinst script for firewall-iptables-deb
-#
+#!/bin/bash -e
+# postinst script for firewall-iptables
 # see: dh_installdeb(1)
-
-set -e
-
 # summary of how this script can be called:
 #        * <postinst> `configure' <most-recently-configured-version>
 #        * <old-postinst> `abort-upgrade' <new version>
@@ -17,14 +13,13 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
-
 case "$1" in
     configure)
+    	update-rc.d firewall-iptables defaults
+    	service firewall-iptables start 
     ;;
-
     abort-upgrade|abort-remove|abort-deconfigure)
     ;;
-
     *)
         echo "postinst called with unknown argument \`$1'" >&2
         exit 1

@@ -1,14 +1,15 @@
-Source: firewall-iptables-deb
+Source: firewall-iptables
 Section: util
 Priority: extra
-Maintainer: sam <sam@localhost>
+Maintainer: Sam Pinkus <sam@localhost>
 Build-Depends: debhelper (>= 8.0.0)
 Standards-Version: 3.9.3
 Homepage: <insert the upstream URL, if relevant>
-#Vcs-Git: git://git.debian.org/collab-maint/firewall-iptables-deb.git
-#Vcs-Browser: http://git.debian.org/?p=collab-maint/firewall-iptables-deb.git;a=summary
+#Vcs-Git: git://git.debian.org/collab-maint/firewall-iptables.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/firewall-iptables.git;a=summary
 
-Package: firewall-iptables-deb
-Architecture: a;;
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Simple ip-tables firewall with masq.
+Package: firewall-iptables
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, kmod, iptables, lsb-base
+Description: Configures a very basic iptables firewall and masq setup, as a service.
+ Completely blows away your iptables chains on start, and completely resets them on stop. 

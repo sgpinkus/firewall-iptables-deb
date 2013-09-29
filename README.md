@@ -1,15 +1,12 @@
-firewall-iptables-deb
-=====================
-
 Simple iptables firewall with port forwarding, setup as a inserv init script.
-Mostly copied from David A. Ranch - http://www.ecst.csuchico.edu/~dranch. Rewritten here as an debian init script.
-You'll want to edit port list, and interface names in this file.
+Mostly copied from D.Ranch - http://www.ecst.csuchico.edu/~dranch. Rewritten here as an debian init script.
+You'll want to edit the default allowed port list in /etc/defaults/.
 Use firewall-checkmodules to check you have the required kernel modules available.
 
-Installation:
+*Installation:* Copy the files in place manually from debian/ dir or build and install the .deb:
 
-  git clone [this] && cd firewall-iptables-deb/
-  sudo cp firewall-iptables-deb /etc/init.s
-  sudo update-rc.d firewall-iptables-deb enable
-  sudo service firewall-iptables-deb start
+    https://github.com/sam-at-github/firewall-iptables-deb;
+    cd firewall-iptables/ && dpkg-buildpackage -b -uc -us && cd -
+    sudo dpkg -i firewall-iptables_*.deb
+
 

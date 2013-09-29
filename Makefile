@@ -1,12 +1,20 @@
+# Nuff said.
 
+DESTDIR=/
+BINDIR=/usr/bin/
 
 all:
-	echo all
-
-install:
-	cp firewall-iptables-deb /etc/init.d
 
 clean:
-	echo clean
+
+install:
+	mkdir -p $(DESTDIR)/etc/init.d/
+	mkdir -p $(DESTDIR)/$(BINDIR)/
+	mkdir -p $(DESTDIR)/etc/default/
+	cp firewall-iptables $(DESTDIR)/etc/init.d/
+	cp firewall-iptables.defaults $(DESTDIR)/etc/default/firewall-iptables
+	cp firewall-iptables-checkmodules $(DESTDIR)/$(BINDIR)/
+
+	
 
 

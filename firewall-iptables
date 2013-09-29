@@ -5,9 +5,9 @@
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: a basic iptbales firewall, and port forwarding.
+# Short-Description: very basic iptables firewall, and port forwarding setup.
 # Description: Mostly copied from David A. Ranch (http://www.ecst.csuchico.edu/~dranch). Rewritten here as an debian Linux init script.
-#              You'll probably have to edit port list, and interface names in this file.
+#              You'll probably have to edit default port list, and interface names.
 ### END INIT INFO
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
@@ -17,6 +17,17 @@ DAEMON=/usr/sbin/$NAME
 DAEMON_ARGS="--options args"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
+
+FWVER=0.76
+IPTABLES=/sbin/iptables
+
+# Default ports and interfaces. TODO: detected on init, and overridden in defaults/
+# Interfaces only relevant to forwarding.
+EXTIF="wlan0"
+INTIF="eth0"
+ENABLE_FORWARDING= # No by default.
+INBOUND_TCP_ALLOW=""
+INBOUND_UDP_ALLOW=""
 
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
@@ -29,26 +40,6 @@ SCRIPTNAME=/etc/init.d/$NAME
 # and status_of_proc is working.
 . /lib/lsb/init-functions
 
-# The location of various iptables and other shell programs
-IPTABLES=/sbin/iptables
-FWVER=0.76
-IPTABLES=/sbin/iptables
-
-#Setting the EXTERNAL and INTERNAL interfaces for the network
-#
-#  Each IP Masquerade network needs to have at least one
-#  external and one internal network.  The external network
-#  is where the natting will occur and the internal network
-#  should preferably be addressed with a RFC1918 private address scheme.
-#  If you are a PPPoE or analog modem user: EXTIF="ppp0" 
-#
-EXTIF="wlan0"
-INTIF="eth0"
-
-# 27/02/12 added bootp (bootps), dhcp (bootpc), domain (dns) for testing
-INBOUND_TCP_ALLOW="ssh,http,https,5900,5901,domain,111,2049"
-INBOUND_UDP_ALLOW="domain,111,2049,bootpc,bootps"
-
 # Check that networking is up.
 [[ "${NETWORKING}" = "no" ]] && exit 0
 
@@ -58,7 +49,7 @@ INBOUND_UDP_ALLOW="domain,111,2049,bootpc,bootps"
 # Set the out of the box default iptables policy.
 # Actually really shouldnt do this. 
 # What we want is for diff programs to be able to use iptables concurrently,
-# but iptables not really designed that way, so we have to.
+# but iptables not really designed that way, so we have to?
 # 
 function set_default_policy()
 {
@@ -120,20 +111,22 @@ function do_start()
   $IPTABLES -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
   # iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT
   [[ -n $INBOUND_TCP_ALLOW ]] && iptables -A INPUT -p tcp -m multiport --destination-port $INBOUND_TCP_ALLOW -j ACCEPT
-  [[ -n $INBOUND_UDP_ALLOW ]] && iptables -A INPUT -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j ACCEPT  
-  # Fucking NFS! What port will satisfy you?!
-  iptables -A INPUT --src 192.168.0.0/24 -j ACCEPT
+  [[ -n $INBOUND_UDP_ALLOW ]] && iptables -A INPUT -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j ACCEPT
+  #$IPTABLES -A INPUT -j LOG
   
   # Forwarding rules
-  $IPTABLES -A INPUT -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF." 
-  echo "   Allowing all connections OUT and only existing and related ones IN"
-  $IPTABLES -A FORWARD -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
-  $IPTABLES -A FORWARD -i $INTIF -o $EXTIF -j ACCEPT
-  $IPTABLES -A FORWARD -j LOG 
+  if [[ -n "$ENABLE_FORWARDING" ]]
+  then
+    $IPTABLES -A INPUT -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF." 
+    echo "   Allowing all connections OUT and only existing and related ones IN"
+    $IPTABLES -A FORWARD -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPTABLES -A FORWARD -i $INTIF -o $EXTIF -j ACCEPT
+    #$IPTABLES -A FORWARD -j LOG
 
-  echo "   Enabling SNAT (MASQUERADE) functionality on $EXTIF"
-  $IPTABLES -t nat -A POSTROUTING -o $EXTIF -j MASQUERADE
-  
+    echo "   Enabling SNAT (MASQUERADE) functionality on $EXTIF"
+    $IPTABLES -t nat -A POSTROUTING -o $EXTIF -j MASQUERADE
+  fi
+
   # This should be at the eventual end of the chain...
   # So you get a RST rather than nothing.
   iptables -A INPUT -j REJECT
@@ -176,51 +169,51 @@ function success()
 
 case "$1" in
   start)
-	  [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
-	  do_start
-	  case "$?" in
-		  0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		  2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
-	  esac
-	;;
+    [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+    do_start
+    case "$?" in
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+  ;;
   stop)
-	  [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
-	  do_stop
-	  case "$?" in
-		  0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		  2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
-	  esac
-	;;
+    [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+    do_stop
+    case "$?" in
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+  ;;
   #status)
   #  
   #;;
   restart|force-reload)
-	#
-	# If the "reload" option is implemented then remove the
-	# 'force-reload' alias
-	#
-	log_daemon_msg "Restarting $DESC" "$NAME"
-	do_stop
-	case "$?" in
-	  0|1)
-		  do_start
-		  case "$?" in
-			  0) log_end_msg 0 ;;
-			  1) log_end_msg 1 ;; # Old process is still running
-			  *) log_end_msg 1 ;; # Failed to start
-		  esac
-		;;
-	  *)
-	  	# Failed to stop
-		log_end_msg 1
-		;;
-	esac
-	;;
+  #
+  # If the "reload" option is implemented then remove the
+  # 'force-reload' alias
+  #
+  log_daemon_msg "Restarting $DESC" "$NAME"
+  do_stop
+  case "$?" in
+    0|1)
+      do_start
+      case "$?" in
+        0) log_end_msg 0 ;;
+        1) log_end_msg 1 ;; # Old process is still running
+        *) log_end_msg 1 ;; # Failed to start
+      esac
+    ;;
+    *)
+      # Failed to stop
+    log_end_msg 1
+    ;;
+  esac
+  ;;
   *)
-	  #echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
-	  echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
-	  exit 3
-	;;
+    #echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+    echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+    exit 3
+  ;;
 esac
 
 :

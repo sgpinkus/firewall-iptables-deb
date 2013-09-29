@@ -1,0 +1,14 @@
+#Setting the EXTERNAL and INTERNAL interfaces for the network
+#
+#  Each IP Masquerade network needs to have at least one
+#  external and one internal network.  The external network
+#  is where the natting will occur and the internal network
+#  should preferably be addressed with a RFC1918 private address scheme.
+#  If you are a PPPoE or analog modem user: EXTIF="ppp0" 
+#
+EXTIF="wlan0"
+INTIF="eth0"
+
+# 27/02/12 added bootp (bootps), dhcp (bootpc), domain (dns) for testing
+INBOUND_TCP_ALLOW="ssh,http,https,5900,5901,domain,111,2049"
+INBOUND_UDP_ALLOW="domain,111,2049,bootpc,bootps"
