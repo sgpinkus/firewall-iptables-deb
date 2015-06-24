@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 ### BEGIN INIT INFO
 # Provides:          firewall-iptables
 # Required-Start:    networking network-manager
@@ -17,7 +17,8 @@ DAEMON=/usr/sbin/$NAME
 DAEMON_ARGS="--options args"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
-
+LIBDIR=/usr/lib
+CONF=/etc/default/"$NAME"
 FWVER=0.76
 IPTABLES=/sbin/iptables
 
@@ -29,108 +30,31 @@ ENABLE_FORWARDING= # No by default.
 INBOUND_TCP_ALLOW=""
 INBOUND_UDP_ALLOW=""
 
-# Read configuration variable file if it is present
-[ -r /etc/default/$NAME ] && . /etc/default/$NAME
-
+# Read configuration variable file if it is present.
+[ -r "$CONF" ] && . "$CONF"
 # Load the VERBOSE setting and other rcS variables
 . /lib/init/vars.sh
-
-# Define LSB log_* functions.
-# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
-# and status_of_proc is working.
+# Define LSB log_* functions. Depend on lsb-base (>= 3.2-14) to ensure that this file is present and status_of_proc is working.
 . /lib/lsb/init-functions
-
+# Load our libs.
+. "$LIBDIR"/firewall-iptables-functions.sh
 # Check that networking is up.
 [[ "${NETWORKING}" = "no" ]] && exit 0
-
-[[ -x /sbin/ifconfig ]] || exit 0
-
-
-# Set the out of the box default iptables policy.
-# Actually really shouldnt do this. 
-# What we want is for diff programs to be able to use iptables concurrently,
-# but iptables not really designed that way, so we have to?
-# 
-function set_default_policy()
-{
-  iptables -P INPUT ACCEPT
-  iptables -F INPUT
-  iptables -P OUTPUT ACCEPT
-  iptables -F OUTPUT
-  iptables -P FORWARD DROP
-  iptables -F FORWARD
-  iptables -t mangle -F
-  iptables -t mangle -X
-  iptables -t nat -F
-  iptables -t nat -X
-  iptables -t filter -F
-  iptables -t filter -X
-  iptables -t raw -F
-  iptables -t raw -X
-  # Reset all IPTABLES counters
-  iptables -Z
-}
-
 
 function do_start()
 {
   echo "Starting simple firewall-iptables version $FWVER:"
   echo "   External Interface:  $EXTIF"
   echo "   Internal Interface:  $INTIF"
-  
   # Enable IP forwarding since it is disabled by default since
   # Redhat Users:  you may try changing the options in /etc/sysconfig/network from:
   # FORWARD_IPV4=false to FORWARD_IPV4=true
-  #
   echo "   Enabling forwarding.."
   echo "1" > /proc/sys/net/ipv4/ip_forward
-
-  # Dynamic IP users:
-  # If you get your IP address dynamically from SLIP, PPP, or DHCP, 
-  # enable this following option.  This enables dynamic-address hacking
-  # which makes the life with Diald and similar programs much easier.
-  #
   echo "   Enabling DynamicAddr.."
   echo "1" > /proc/sys/net/ipv4/ip_dynaddr
-  
-  #echo "   Clearing any existing rules and setting default policy.."
-  #set_default_policy()
-  
-  #echo "Setting up firewall. Note $0 should run before all other programs that set iptables rules."
-  #echo "Except that still does not work because we want to change what on the end of the chains not just the starts."
-  $IPTABLES -P INPUT DROP
- 
-  # Firewall 
-  $IPTABLES -A INPUT -m comment --comment "firewall-iptables firewall rules"
-  # We can talk to ourselves freely.
-  # Allow all outgoing connections we start.
-  # Allowing ssh, http, https, vnc - youll have to come and edit this as your firewall rules!
-  # TODO: allow ICMP from me to me
-  $IPTABLES -A INPUT -i lo -j ACCEPT
-  $IPTABLES -A INPUT -p icmp -j ACCEPT 
-  $IPTABLES -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-  # iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT
-  [[ -n $INBOUND_TCP_ALLOW ]] && iptables -A INPUT -p tcp -m multiport --destination-port $INBOUND_TCP_ALLOW -j ACCEPT
-  [[ -n $INBOUND_UDP_ALLOW ]] && iptables -A INPUT -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j ACCEPT
-  #$IPTABLES -A INPUT -j LOG
-  
-  # Forwarding rules
-  if [[ -n "$ENABLE_FORWARDING" ]]
-  then
-    $IPTABLES -A INPUT -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF." 
-    echo "   Allowing all connections OUT and only existing and related ones IN"
-    $IPTABLES -A FORWARD -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
-    $IPTABLES -A FORWARD -i $INTIF -o $EXTIF -j ACCEPT
-    #$IPTABLES -A FORWARD -j LOG
-
-    echo "   Enabling SNAT (MASQUERADE) functionality on $EXTIF"
-    $IPTABLES -t nat -A POSTROUTING -o $EXTIF -j MASQUERADE
-  fi
-
-  # This should be at the eventual end of the chain...
-  # So you get a RST rather than nothing.
-  iptables -A INPUT -j REJECT
-  
+  set_firewall_rules
+  set_forward_rules
   echo -n "firewall-iptables v$FWVER done."
   success
   echo
@@ -140,8 +64,8 @@ function do_start()
 function do_stop()
 {
   echo "Stopping firewall-iptables:"
-  #no.
-  set_default_policy
+  clear_firewall_chains
+  clear_forward_chains
   echo -n "Warning: default permissive policy set."
   success
   echo
@@ -166,7 +90,6 @@ function success()
   echo -n ""
 }
 
-
 case "$1" in
   start)
     [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
@@ -185,7 +108,7 @@ case "$1" in
     esac
   ;;
   #status)
-  #  
+  #
   #;;
   restart|force-reload)
   #
@@ -215,5 +138,3 @@ case "$1" in
     exit 3
   ;;
 esac
-
-:
