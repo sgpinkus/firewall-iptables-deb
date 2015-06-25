@@ -1,28 +1,25 @@
 #!/bin/bash -e
 ### BEGIN INIT INFO
-# Provides:          firewall-iptables
+# Provides:          forward-iptables
 # Required-Start:    networking network-manager
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: very basic iptables firewall, and port forwarding setup.
+# Short-Description: Setup basic port forwarding with iptables
 # Description: Mostly copied from David A. Ranch (http://www.ecst.csuchico.edu/~dranch). Rewritten here as an debian Linux init script.
-#              You'll probably have to edit default port list, and interface names.
 ### END INIT INFO
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="Basic iptables firewall"
-NAME=firewall-iptables
+DESC="Basic iptables port forward"
+NAME=forward-iptables
 DAEMON=/usr/sbin/$NAME
 DAEMON_ARGS="--options args"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 CONFFILE=/etc/default/"$NAME"
-# Default ports.
-INBOUND_TCP_ALLOW=""
-INBOUND_UDP_ALLOW=""
-FIREWALL_DEFAULT_REJECT=
-FIREWALL_INPUT_DROP=
+# Interfaces only relevant to forwarding.
+EXTIF="eth0"
+INTIF="eth0.1"
 
 # Check that networking is up.
 [[ "${NETWORKING}" = "no" ]] && exit 0
@@ -33,32 +30,35 @@ FIREWALL_INPUT_DROP=
 # Define LSB log_* functions. Depend on lsb-base (>= 3.2-14) to ensure that this file is present and status_of_proc is working.
 . /lib/lsb/init-functions
 
-function set_firewall_rules()
+function set_forward_rules()
 {
-  clear_firewall_chains
-  # Firewall. Add our chains so we can modularize.
-  iptables -t filter -N gw_firewall_filter_input
-  iptables -A gw_firewall_filter_input -m comment --comment "firewall-iptables firewall rules"
-  # We can talk to ourselves freely. Allow all outgoing connections we start.
-  # Allowing ssh, http, https, vnc - youll have to come and edit this as your firewall rules!
-  iptables -A gw_firewall_filter_input -i lo -j ACCEPT
-  iptables -A gw_firewall_filter_input -p icmp -j ACCEPT
-  iptables -A gw_firewall_filter_input -m state --state RELATED,ESTABLISHED -j ACCEPT
-  # iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT
-  [[ -n $INBOUND_TCP_ALLOW ]] && iptables -A gw_firewall_filter_input -p tcp -m multiport --destination-port $INBOUND_TCP_ALLOW -j ACCEPT
-  [[ -n $INBOUND_UDP_ALLOW ]] && iptables -A gw_firewall_filter_input -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j ACCEPT
-  #iptables -A INPUT -j LOG
-  [[ -n "FIREWALL_DEFAULT_REJECT" ]] && iptables -A gw_firewall_filter_input -j REJECT
-  [[ -n "FIREWALL_INPUT_DROP" ]] && iptables -P INPUT DROP
-  iptables -A INPUT -j gw_firewall_filter_input
+  [[ -z "$EXTIF" ]] && echo "Error: EXTIF undefined" && return 1
+  [[ -z "$INTIF" ]] && echo "Error: INTIF undefined" && return 1
+  clear_forward_chains
+  iptables -t filter -N gw_firewall_filter_forward
+  iptables -t nat -N gw_firewall_nat_postrouting
+  iptables -A gw_firewall_filter_forward -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF."
+  echo "   Allowing all connections OUT and only existing and related ones IN"
+  iptables -A gw_firewall_filter_forward -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
+  iptables -A gw_firewall_filter_forward -i $INTIF -o $EXTIF -j ACCEPT
+  #iptables -A gw_firewall_filter_forward -j LOG
+  echo "   Enabling SNAT (MASQUERADE) functionality on $EXTIF"
+  iptables -t nat -A gw_firewall_nat_postrouting -o $EXTIF -j MASQUERADE
+  iptables -A FORWARD -j gw_firewall_filter_forward
+  iptables -t nat -A POSTROUTING -j gw_firewall_nat_postrouting
 }
 
-function clear_firewall_chains()
+function clear_forward_chains()
 {
-  if chain_exists filter gw_firewall_filter_input; then
-    iptables -t filter -D INPUT -j gw_firewall_filter_input
-    iptables -t filter -F gw_firewall_filter_input
-    iptables -t filter -X gw_firewall_filter_input
+  if chain_exists filter gw_firewall_filter_forward; then
+    iptables -t filter -D FORWARD -j gw_firewall_filter_forward 2>/dev/null
+    iptables -t filter -F gw_firewall_filter_forward 2>/dev/null
+    iptables -t filter -X gw_firewall_filter_forward 2>/dev/null
+  fi
+  if chain_exists nat gw_firewall_nat_postrouting; then
+    iptables -t nat -D POSTROUTING -j gw_firewall_nat_postrouting 2>/dev/null
+    iptables -t nat -F gw_firewall_nat_postrouting 2>/dev/null
+    iptables -t nat -X gw_firewall_nat_postrouting 2>/dev/null
   fi
 }
 
@@ -70,11 +70,21 @@ function chain_exists()
   return 1
 }
 
+
 function do_start()
 {
-  echo "Starting simple firewall-iptables."
-  set_firewall_rules
-  echo -n "Started firewall-iptables."
+  echo "Starting simple forward-iptables."
+  echo "   External Interface:  $EXTIF"
+  echo "   Internal Interface:  $INTIF"
+  # Enable IP forwarding since it is disabled by default since
+  # Redhat Users:  you may try changing the options in /etc/sysconfig/network from:
+  # FORWARD_IPV4=false to FORWARD_IPV4=true
+  echo "   Enabling forwarding.."
+  echo "1" > /proc/sys/net/ipv4/ip_forward
+  echo "   Enabling DynamicAddr.."
+  echo "1" > /proc/sys/net/ipv4/ip_dynaddr
+  set_forward_rules
+  echo -n "forward-iptables done."
   success
   echo
   return 0
@@ -82,9 +92,8 @@ function do_start()
 
 function do_stop()
 {
-  echo "Stopping firewall-iptables."
-  clear_firewall_chains
-  echo -n "Stopped firewall-iptables."
+  echo "Stopping forward-iptables"
+  clear_forward_chains
   success
   echo
   return 0
