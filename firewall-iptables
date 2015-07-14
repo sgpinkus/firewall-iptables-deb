@@ -49,7 +49,7 @@ function set_firewall_rules()
   [[ -n $INBOUND_UDP_ALLOW ]] && iptables -A gw_firewall_filter_input -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j ACCEPT
   #iptables -A INPUT -j LOG
   [[ -n "FIREWALL_DEFAULT_REJECT" ]] && iptables -A gw_firewall_filter_input -j REJECT
-  [[ -n "FIREWALL_INPUT_DROP" ]] && iptables -P INPUT DROP
+  [[ -n "FIREWALL_INPUT_DROP" ]] && iptables -P INPUT DROP # Problem is can't restore this.
   iptables -A INPUT -j gw_firewall_filter_input
 }
 
@@ -60,6 +60,7 @@ function clear_firewall_chains()
     iptables -t filter -F gw_firewall_filter_input
     iptables -t filter -X gw_firewall_filter_input
   fi
+  [ -n "FIREWALL_INPUT_DROP" ]] && iptables -P INPUT ACCEPT # Problem is may not have been this.
 }
 
 function chain_exists()
@@ -127,30 +128,25 @@ function do_run()
         2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
       esac
     ;;
-    #status)
-    #
-    #;;
     restart|force-reload)
-    #
-    # If the "reload" option is implemented then remove the
-    # 'force-reload' alias
-    #
-    log_daemon_msg "Restarting $DESC" "$NAME"
-    do_stop
-    case "$?" in
-      0|1)
-        do_start
-        case "$?" in
-          0) log_end_msg 0 ;;
-          1) log_end_msg 1 ;; # Old process is still running
-          *) log_end_msg 1 ;; # Failed to start
-        esac
-      ;;
-      *)
-        # Failed to stop
-      log_end_msg 1
-      ;;
-    esac
+      # If the "reload" option is implemented then remove the
+      # 'force-reload' alias
+      log_daemon_msg "Restarting $DESC" "$NAME"
+      do_stop
+      case "$?" in
+        0|1)
+          do_start
+          case "$?" in
+            0) log_end_msg 0 ;;
+            1) log_end_msg 1 ;; # Old process is still running
+            *) log_end_msg 1 ;; # Failed to start
+          esac
+        ;;
+        *)
+          # Failed to stop
+        log_end_msg 1
+        ;;
+      esac
     ;;
     *)
       #echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
@@ -158,6 +154,8 @@ function do_run()
       exit 3
     ;;
   esac
+  return 0;
 }
 
 do_run "$@"
+exit 0;
