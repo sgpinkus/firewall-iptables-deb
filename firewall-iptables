@@ -60,7 +60,7 @@ function clear_firewall_chains()
     iptables -t filter -F gw_firewall_filter_input
     iptables -t filter -X gw_firewall_filter_input
   fi
-  [ -n "FIREWALL_INPUT_DROP" ]] && iptables -P INPUT ACCEPT # Problem is may not have been this.
+  [[ -n "FIREWALL_INPUT_DROP" ]] && iptables -P INPUT ACCEPT # Problem is may not have been this.
 }
 
 function chain_exists()
