@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+function do_start()
+{
+}
+
+function do_stop()
+{
+}
+
+[[ -z "$1" || ( "$1" != "start" && "$1" != "stop" ) ]] && exit 1;
+
+case "$1" in
+  start)
+    do_start
+  ;;
+  stop)
+    do_stop
+  ;;
+esac
