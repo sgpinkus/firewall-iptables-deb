@@ -21,8 +21,8 @@ CONFFILE=/etc/default/"$NAME"
 # Default ports.
 INBOUND_TCP_ALLOW=""
 INBOUND_UDP_ALLOW=""
-FIREWALL_DEFAULT_REJECT=
-FIREWALL_INPUT_DROP=
+FIREWALL_DEFAULT_REJECT=""
+FIREWALL_INPUT_DROP=""
 
 # Check that networking is up.
 [[ "${NETWORKING}" = "no" ]] && exit 0
