@@ -35,30 +35,30 @@ function set_forward_rules()
   [[ -z "$EXTIF" ]] && echo "Error: EXTIF undefined" && return 1
   [[ -z "$INTIF" ]] && echo "Error: INTIF undefined" && return 1
   clear_forward_chains
-  iptables -t filter -N my_firewall_filter_forward
-  iptables -t nat -N my_firewall_nat_postrouting
-  iptables -A my_firewall_filter_forward -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF."
+  iptables -t filter -N firewall_filter_forward
+  iptables -t nat -N firewall_nat_postrouting
+  iptables -A firewall_filter_forward -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF."
   echo "   Allowing all connections OUT and only existing and related ones IN"
-  iptables -A my_firewall_filter_forward -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
-  iptables -A my_firewall_filter_forward -i $INTIF -o $EXTIF -j ACCEPT
-  #iptables -A my_firewall_filter_forward -j LOG
+  iptables -A firewall_filter_forward -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
+  iptables -A firewall_filter_forward -i $INTIF -o $EXTIF -j ACCEPT
+  #iptables -A firewall_filter_forward -j LOG
   echo "   Enabling SNAT (MASQUERADE) functionality on $EXTIF"
-  iptables -t nat -A my_firewall_nat_postrouting -o $EXTIF -j MASQUERADE
-  iptables -A FORWARD -j my_firewall_filter_forward
-  iptables -t nat -A POSTROUTING -j my_firewall_nat_postrouting
+  iptables -t nat -A firewall_nat_postrouting -o $EXTIF -j MASQUERADE
+  iptables -A FORWARD -j firewall_filter_forward
+  iptables -t nat -A POSTROUTING -j firewall_nat_postrouting
 }
 
 function clear_forward_chains()
 {
-  if chain_exists filter my_firewall_filter_forward; then
-    iptables -t filter -D FORWARD -j my_firewall_filter_forward 2>/dev/null
-    iptables -t filter -F my_firewall_filter_forward 2>/dev/null
-    iptables -t filter -X my_firewall_filter_forward 2>/dev/null
+  if chain_exists filter firewall_filter_forward; then
+    iptables -t filter -D FORWARD -j firewall_filter_forward 2>/dev/null
+    iptables -t filter -F firewall_filter_forward 2>/dev/null
+    iptables -t filter -X firewall_filter_forward 2>/dev/null
   fi
-  if chain_exists nat my_firewall_nat_postrouting; then
-    iptables -t nat -D POSTROUTING -j my_firewall_nat_postrouting 2>/dev/null
-    iptables -t nat -F my_firewall_nat_postrouting 2>/dev/null
-    iptables -t nat -X my_firewall_nat_postrouting 2>/dev/null
+  if chain_exists nat firewall_nat_postrouting; then
+    iptables -t nat -D POSTROUTING -j firewall_nat_postrouting 2>/dev/null
+    iptables -t nat -F firewall_nat_postrouting 2>/dev/null
+    iptables -t nat -X firewall_nat_postrouting 2>/dev/null
   fi
 }
 
