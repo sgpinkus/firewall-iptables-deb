@@ -15,8 +15,6 @@
 
 case "$1" in
     configure)
-      update-rc.d firewall-custom-iptables defaults
-      service firewall-custom-iptables start
       update-rc.d firewall-iptables defaults
       service firewall-iptables start
     ;;
