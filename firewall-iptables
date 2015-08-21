@@ -5,7 +5,7 @@
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: very basic iptables firewall, and port forwarding setup.
+# Short-Description: Very basic iptables port only firewall. You have to handle hosts in another layer..
 # Description: Mostly copied from David A. Ranch (http://www.ecst.csuchico.edu/~dranch). Rewritten here as an debian Linux init script.
 #              You'll probably have to edit default port list, and interface names.
 ### END INIT INFO
@@ -21,8 +21,11 @@ CONFFILE=/etc/default/"$NAME"
 # Default ports.
 INBOUND_TCP_ALLOW=""
 INBOUND_UDP_ALLOW=""
-FIREWALL_DEFAULT_REJECT=""
-FIREWALL_INPUT_DROP=""
+FIREWALL_LOG_REJECT="1"
+# Should ~always be set to REJECT.
+FIREWALL_REJECT_RULE="REJECT"
+# Should ~always be set to ACCEPT
+FIREWALL_INPUT_DEFAULT_RULE="ACCEPT"
 
 # Check that networking is up.
 [[ "${NETWORKING}" = "no" ]] && exit 0
@@ -33,34 +36,34 @@ FIREWALL_INPUT_DROP=""
 # Define LSB log_* functions. Depend on lsb-base (>= 3.2-14) to ensure that this file is present and status_of_proc is working.
 . /lib/lsb/init-functions
 
+# Set up firewall.
+# -ve bias by default - rejects stuff that does not pass.
 function set_firewall_rules()
 {
   clear_firewall_chains
-  # Firewall. Add our chains so we can modularize.
-  iptables -t filter -N gw_firewall_filter_input
-  iptables -A gw_firewall_filter_input -m comment --comment "firewall-iptables firewall rules"
+  # Firewall. Add a chain so we can keep it modular.
+  iptables -t filter -N my_firewall_filter_input
+  iptables -A my_firewall_filter_input -m comment --comment "firewall-iptables firewall port rules"
+  iptables -P INPUT "${FIREWALL_INPUT_DEFAULT_RULE}"
+  iptables -A INPUT -j my_firewall_filter_input
   # We can talk to ourselves freely. Allow all outgoing connections we start.
-  # Allowing ssh, http, https, vnc - youll have to come and edit this as your firewall rules!
-  iptables -A gw_firewall_filter_input -i lo -j ACCEPT
-  iptables -A gw_firewall_filter_input -p icmp -j ACCEPT
-  iptables -A gw_firewall_filter_input -m state --state RELATED,ESTABLISHED -j ACCEPT
-  # iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT
-  [[ -n $INBOUND_TCP_ALLOW ]] && iptables -A gw_firewall_filter_input -p tcp -m multiport --destination-port $INBOUND_TCP_ALLOW -j ACCEPT
-  [[ -n $INBOUND_UDP_ALLOW ]] && iptables -A gw_firewall_filter_input -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j ACCEPT
-  #iptables -A INPUT -j LOG
-  [[ -n "FIREWALL_DEFAULT_REJECT" ]] && iptables -A gw_firewall_filter_input -j REJECT
-  [[ -n "FIREWALL_INPUT_DROP" ]] && iptables -P INPUT DROP # Problem is can't restore this.
-  iptables -A INPUT -j gw_firewall_filter_input
+  iptables -A my_firewall_filter_input -i lo -j RETURN
+  iptables -A my_firewall_filter_input -p icmp -j RETURN
+  iptables -A my_firewall_filter_input -m state --state RELATED,ESTABLISHED -j RETURN
+  [[ -n ${INBOUND_TCP_ALLOW} ]] && iptables -A my_firewall_filter_input -p tcp -m multiport --destination-port $INBOUND_TCP_ALLOW -j RETURN
+  [[ -n ${INBOUND_UDP_ALLOW} ]] && iptables -A my_firewall_filter_input -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j RETURN
+  [[ -n "${FIREWALL_LOG_REJECT}" ]] && iptables -A my_firewall_filter_input -j LOG --log-prefix="firewall-iptables REJECTED "
+  iptables -A my_firewall_filter_input -j "${FIREWALL_REJECT_RULE}"
 }
 
 function clear_firewall_chains()
 {
-  if chain_exists filter gw_firewall_filter_input; then
-    iptables -t filter -D INPUT -j gw_firewall_filter_input
-    iptables -t filter -F gw_firewall_filter_input
-    iptables -t filter -X gw_firewall_filter_input
+  if chain_exists filter my_firewall_filter_input; then
+    iptables -t filter -D INPUT -j my_firewall_filter_input
+    iptables -t filter -F my_firewall_filter_input
+    iptables -t filter -X my_firewall_filter_input
   fi
-  [[ -n "FIREWALL_INPUT_DROP" ]] && iptables -P INPUT ACCEPT # Problem is may not have been this.
+  iptables -P INPUT ACCEPT
 }
 
 function chain_exists()
