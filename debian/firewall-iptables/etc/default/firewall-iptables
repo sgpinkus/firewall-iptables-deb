@@ -1,0 +1,2 @@
+INBOUND_TCP_ALLOW="ssh,http,https,5900,5901,domain,111,2049"
+INBOUND_UDP_ALLOW="domain,111,2049,bootpc,bootps"

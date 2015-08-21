@@ -13,6 +13,8 @@ install:
 	mkdir -p $(DESTDIR)/etc/default/
 	cp firewall-iptables $(DESTDIR)/etc/init.d/
 	cp firewall-iptables.defaults $(DESTDIR)/etc/default/firewall-iptables
+	cp firewall-custom-iptables $(DESTDIR)/etc/init.d/
+	cp firewall-custom-iptables.defaults $(DESTDIR)/etc/default/firewall-custom-iptables
 	cp forward-iptables $(DESTDIR)/etc/init.d/
 	cp forward-iptables.defaults $(DESTDIR)/etc/default/forward-iptables
 	cp firewall-iptables-checkmodules $(DESTDIR)/$(BINDIR)/

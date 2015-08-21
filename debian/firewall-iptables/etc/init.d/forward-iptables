@@ -1,0 +1,169 @@
+#!/bin/bash -e
+### BEGIN INIT INFO
+# Provides:          forward-iptables
+# Required-Start:    networking
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Setup basic port forwarding with iptables
+# Description: Mostly copied from David A. Ranch (http://www.ecst.csuchico.edu/~dranch). Rewritten here as an debian Linux init script.
+### END INIT INFO
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Basic iptables port forward"
+NAME=forward-iptables
+DAEMON=/usr/sbin/$NAME
+DAEMON_ARGS="--options args"
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+CONFFILE=/etc/default/"$NAME"
+# Interfaces only relevant to forwarding.
+EXTIF="eth0"
+INTIF="eth0.1"
+
+# Check that networking is up.
+[[ "${NETWORKING}" = "no" ]] && exit 0
+# Read configuration variable file if it is present.
+[ -r "$CONFFILE" ] && . "$CONFFILE"
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+# Define LSB log_* functions. Depend on lsb-base (>= 3.2-14) to ensure that this file is present and status_of_proc is working.
+. /lib/lsb/init-functions
+
+function set_forward_rules()
+{
+  [[ -z "$EXTIF" ]] && echo "Error: EXTIF undefined" && return 1
+  [[ -z "$INTIF" ]] && echo "Error: INTIF undefined" && return 1
+  clear_forward_chains
+  iptables -t filter -N firewall_filter_forward
+  iptables -t nat -N firewall_nat_postrouting
+  iptables -A firewall_filter_forward -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF."
+  echo "   Allowing all connections OUT and only existing and related ones IN"
+  iptables -A firewall_filter_forward -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
+  iptables -A firewall_filter_forward -i $INTIF -o $EXTIF -j ACCEPT
+  #iptables -A firewall_filter_forward -j LOG
+  echo "   Enabling SNAT (MASQUERADE) functionality on $EXTIF"
+  iptables -t nat -A firewall_nat_postrouting -o $EXTIF -j MASQUERADE
+  iptables -A FORWARD -j firewall_filter_forward
+  iptables -t nat -A POSTROUTING -j firewall_nat_postrouting
+}
+
+function clear_forward_chains()
+{
+  if chain_exists filter firewall_filter_forward; then
+    iptables -t filter -D FORWARD -j firewall_filter_forward 2>/dev/null
+    iptables -t filter -F firewall_filter_forward 2>/dev/null
+    iptables -t filter -X firewall_filter_forward 2>/dev/null
+  fi
+  if chain_exists nat firewall_nat_postrouting; then
+    iptables -t nat -D POSTROUTING -j firewall_nat_postrouting 2>/dev/null
+    iptables -t nat -F firewall_nat_postrouting 2>/dev/null
+    iptables -t nat -X firewall_nat_postrouting 2>/dev/null
+  fi
+}
+
+function chain_exists()
+{
+  if [[ -n `iptables -t "$1" --list "$2" 2>/dev/null` ]]; then
+    return 0
+  fi
+  return 1
+}
+
+
+function do_start()
+{
+  echo "Starting simple forward-iptables."
+  echo "   External Interface:  $EXTIF"
+  echo "   Internal Interface:  $INTIF"
+  # Enable IP forwarding since it is disabled by default since
+  # Redhat Users:  you may try changing the options in /etc/sysconfig/network from:
+  # FORWARD_IPV4=false to FORWARD_IPV4=true
+  echo "   Enabling forwarding.."
+  echo "1" > /proc/sys/net/ipv4/ip_forward
+  echo "   Enabling DynamicAddr.."
+  echo "1" > /proc/sys/net/ipv4/ip_dynaddr
+  set_forward_rules
+  echo -n "forward-iptables done."
+  success
+  echo
+  return 0
+}
+
+function do_stop()
+{
+  echo "Stopping forward-iptables"
+  clear_forward_chains
+  success
+  echo
+  return 0
+}
+
+function do_restart()
+{
+  $0 stop
+  $0 start
+  return $?
+}
+
+function do_status()
+{
+  $IPTABLES -L
+  return 0
+}
+
+function success()
+{
+  echo -n ""
+}
+
+function do_run()
+{
+  case "$1" in
+    start)
+      [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+      do_start
+      case "$?" in
+        0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+        2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+      esac
+    ;;
+    stop)
+      [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+      do_stop
+      case "$?" in
+        0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+        2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+      esac
+    ;;
+    restart|force-reload)
+      # If the "reload" option is implemented then remove the
+      # 'force-reload' alias
+      log_daemon_msg "Restarting $DESC" "$NAME"
+      do_stop
+      case "$?" in
+        0|1)
+          do_start
+          case "$?" in
+            0) log_end_msg 0 ;;
+            1) log_end_msg 1 ;; # Old process is still running
+            *) log_end_msg 1 ;; # Failed to start
+          esac
+        ;;
+        *)
+          # Failed to stop
+        log_end_msg 1
+        ;;
+      esac
+    ;;
+    *)
+      #echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+      echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+      exit 3
+    ;;
+  esac
+  return 0
+}
+
+do_run "$@"
+exit 0;

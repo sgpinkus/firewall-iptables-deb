@@ -1,0 +1,164 @@
+#!/bin/bash -e
+### BEGIN INIT INFO
+# Provides:          firewall-iptables
+# Required-Start:    networking firewall-custom-iptables
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Very basic iptables port only firewall. You have to handle hosts in another layer..
+# Description: Mostly copied from David A. Ranch (http://www.ecst.csuchico.edu/~dranch). Rewritten here as an debian Linux init script.
+#              You'll probably have to edit default port list, and interface names.
+### END INIT INFO
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Basic iptables firewall"
+NAME=firewall-iptables
+DAEMON=/usr/sbin/$NAME
+DAEMON_ARGS="--options args"
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+CONFFILE=/etc/default/"$NAME"
+# Default ports.
+INBOUND_TCP_ALLOW=""
+INBOUND_UDP_ALLOW=""
+FIREWALL_LOG_REJECT="1"
+# Should ~always be set to REJECT.
+FIREWALL_REJECT_RULE="REJECT"
+# Should ~always be set to ACCEPT
+FIREWALL_INPUT_DEFAULT_RULE="ACCEPT"
+
+# Check that networking is up.
+[[ "${NETWORKING}" = "no" ]] && exit 0
+# Read configuration variable file if it is present.
+[ -r "$CONFFILE" ] && . "$CONFFILE"
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+# Define LSB log_* functions. Depend on lsb-base (>= 3.2-14) to ensure that this file is present and status_of_proc is working.
+. /lib/lsb/init-functions
+
+# Set up firewall.
+# -ve bias by default - rejects stuff that does not pass.
+function set_firewall_rules()
+{
+  clear_firewall_chains
+  # Firewall. Add a chain so we can keep it modular.
+  iptables -t filter -N firewall_filter_input
+  iptables -A firewall_filter_input -m comment --comment "firewall-iptables firewall port rules"
+  iptables -P INPUT "${FIREWALL_INPUT_DEFAULT_RULE}"
+  iptables -A INPUT -j firewall_filter_input
+  # We can talk to ourselves freely. Allow all outgoing connections we start.
+  iptables -A firewall_filter_input -i lo -j RETURN
+  iptables -A firewall_filter_input -p icmp -j RETURN
+  iptables -A firewall_filter_input -m state --state RELATED,ESTABLISHED -j RETURN
+  [[ -n ${INBOUND_TCP_ALLOW} ]] && iptables -A firewall_filter_input -p tcp -m multiport --destination-port $INBOUND_TCP_ALLOW -j RETURN
+  [[ -n ${INBOUND_UDP_ALLOW} ]] && iptables -A firewall_filter_input -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j RETURN
+  [[ -n "${FIREWALL_LOG_REJECT}" ]] && iptables -A firewall_filter_input -j LOG --log-prefix="firewall-iptables REJECTED "
+  iptables -A firewall_filter_input -j "${FIREWALL_REJECT_RULE}"
+}
+
+function clear_firewall_chains()
+{
+  if chain_exists filter firewall_filter_input; then
+    iptables -t filter -D INPUT -j firewall_filter_input
+    iptables -t filter -F firewall_filter_input
+    iptables -t filter -X firewall_filter_input
+  fi
+  iptables -P INPUT ACCEPT
+}
+
+function chain_exists()
+{
+  if [[ -n `iptables -t "$1" --list "$2" 2>/dev/null` ]]; then
+    return 0
+  fi
+  return 1
+}
+
+function do_start()
+{
+  echo "Starting simple firewall-iptables."
+  set_firewall_rules
+  echo -n "Started firewall-iptables."
+  success
+  echo
+  return 0
+}
+
+function do_stop()
+{
+  echo "Stopping firewall-iptables."
+  clear_firewall_chains
+  echo -n "Stopped firewall-iptables."
+  success
+  echo
+  return 0
+}
+
+function do_restart()
+{
+  $0 stop
+  $0 start
+  return $?
+}
+
+function do_status()
+{
+  $IPTABLES -L
+  return 0
+}
+
+function success()
+{
+  echo -n ""
+}
+
+function do_run()
+{
+  case "$1" in
+    start)
+      [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+      do_start
+      case "$?" in
+        0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+        2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+      esac
+    ;;
+    stop)
+      [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+      do_stop
+      case "$?" in
+        0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+        2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+      esac
+    ;;
+    restart|force-reload)
+      # If the "reload" option is implemented then remove the
+      # 'force-reload' alias
+      log_daemon_msg "Restarting $DESC" "$NAME"
+      do_stop
+      case "$?" in
+        0|1)
+          do_start
+          case "$?" in
+            0) log_end_msg 0 ;;
+            1) log_end_msg 1 ;; # Old process is still running
+            *) log_end_msg 1 ;; # Failed to start
+          esac
+        ;;
+        *)
+          # Failed to stop
+        log_end_msg 1
+        ;;
+      esac
+    ;;
+    *)
+      #echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+      echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+      exit 3
+    ;;
+  esac
+  return 0;
+}
+
+do_run "$@"
+exit 0;

@@ -1,0 +1,6 @@
+/etc/default/firewall-iptables
+/etc/default/firewall-custom-iptables
+/etc/default/forward-iptables
+/etc/init.d/firewall-iptables
+/etc/init.d/firewall-custom-iptables
+/etc/init.d/forward-iptables
