@@ -18,7 +18,7 @@ DAEMON_ARGS="--options args"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 CONFFILE=/etc/default/"$NAME"
-FIREWALL_SCRIPT_DIR=./scripts.d
+FIREWALL_SCRIPT_DIR=/etc/firewall-iptables/scripts.d
 
 # Check that networking is up.
 [[ "${NETWORKING}" = "no" ]] && exit 0
