@@ -1,0 +1,56 @@
+#!/bin/bash -e
+# Interfaces only relevant to forwarding.
+EXTIF="eth0"
+INTIF="eth0.1"
+
+
+function do_start()
+{
+  [[ -z "$EXTIF" ]] && echo "Error: EXTIF undefined" && return 1
+  [[ -z "$INTIF" ]] && echo "Error: INTIF undefined" && return 1
+  do_stop
+  iptables -t filter -N firewall_forward_filter
+  iptables -t nat -N firewall_nat_postrouting
+  iptables -A firewall_forward_filter -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF."
+  echo "   Allowing all connections OUT and only existing and related ones IN"
+  iptables -A firewall_forward_filter -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
+  iptables -A firewall_forward_filter -i $INTIF -o $EXTIF -j ACCEPT
+  #iptables -A firewall_forward_filter -j LOG
+  echo "   Enabling SNAT (MASQUERADE) functionality on $EXTIF"
+  iptables -t nat -A firewall_nat_postrouting -o $EXTIF -j MASQUERADE
+  iptables -A FORWARD -j firewall_forward_filter
+  iptables -t nat -A POSTROUTING -j firewall_nat_postrouting
+}
+
+function do_stop()
+{
+  if chain_exists filter firewall_forward_filter; then
+    iptables -t filter -D FORWARD -j firewall_forward_filter 2>/dev/null
+    iptables -t filter -F firewall_forward_filter 2>/dev/null
+    iptables -t filter -X firewall_forward_filter 2>/dev/null
+  fi
+  if chain_exists nat firewall_nat_postrouting; then
+    iptables -t nat -D POSTROUTING -j firewall_nat_postrouting 2>/dev/null
+    iptables -t nat -F firewall_nat_postrouting 2>/dev/null
+    iptables -t nat -X firewall_nat_postrouting 2>/dev/null
+  fi
+}
+
+function chain_exists()
+{
+  if [[ -n `iptables -t "$1" --list "$2" 2>/dev/null` ]]; then
+    return 0
+  fi
+  return 1
+}
+
+[[ -z "$1" || ( "$1" != "start" && "$1" != "stop" ) ]] && exit 1;
+
+case "$1" in
+  start)
+    do_start
+  ;;
+  stop)
+    do_stop
+  ;;
+esac

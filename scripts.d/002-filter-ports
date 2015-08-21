@@ -1,0 +1,55 @@
+#!/bin/bash -e
+# Default ports.
+#INBOUND_TCP_ALLOW=""
+#INBOUND_UDP_ALLOW=""
+INBOUND_TCP_ALLOW="ssh,http,https,5900,5901,domain,111,2049"
+INBOUND_UDP_ALLOW="domain,111,2049,bootpc,bootps"
+FIREWALL_LOG_REJECT="1"
+# Should ~always be set to REJECT.
+FIREWALL_REJECT_RULE="REJECT"
+
+function do_start()
+{
+  do_stop
+  # Firewall. Add a chain so we can keep it modular.
+  iptables -t filter -N firewall_port_filter
+  iptables -A firewall_port_filter -m comment --comment "firewall-iptables firewall port rules"
+  iptables -A INPUT -j firewall_port_filter
+  # We can talk to ourselves freely. Allow all outgoing connections we start.
+  iptables -A firewall_port_filter -i lo -j RETURN
+  iptables -A firewall_port_filter -p icmp -j RETURN
+  iptables -A firewall_port_filter -m state --state RELATED,ESTABLISHED -j RETURN
+  [[ -n ${INBOUND_TCP_ALLOW} ]] && iptables -A firewall_port_filter -p tcp -m multiport --destination-port $INBOUND_TCP_ALLOW -j RETURN
+  [[ -n ${INBOUND_UDP_ALLOW} ]] && iptables -A firewall_port_filter -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j RETURN
+  [[ -n "${FIREWALL_LOG_REJECT}" ]] && iptables -A firewall_port_filter -j LOG --log-prefix="firewall-iptables REJECTED "
+  iptables -A firewall_port_filter -j "${FIREWALL_REJECT_RULE}"
+}
+
+function do_stop()
+{
+  if chain_exists filter firewall_port_filter; then
+    iptables -t filter -D INPUT -j firewall_port_filter
+    iptables -t filter -F firewall_port_filter
+    iptables -t filter -X firewall_port_filter
+  fi
+  iptables -P INPUT ACCEPT
+}
+
+function chain_exists()
+{
+  if [[ -n `iptables -t "$1" --list "$2" 2>/dev/null` ]]; then
+    return 0
+  fi
+  return 1
+}
+
+[[ -z "$1" || ( "$1" != "start" && "$1" != "stop" ) ]] && exit 1;
+
+case "$1" in
+  start)
+    do_start
+  ;;
+  stop)
+    do_stop
+  ;;
+esac

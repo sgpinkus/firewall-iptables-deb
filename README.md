@@ -1,8 +1,5 @@
 # Overview
-Simple iptables firewall with port forwarding, setup as a inserv init scripts.
-Mostly copied from D.Ranch - http://www.ecst.csuchico.edu/~dranch. Rewritten here as an debian init scripts.
-You'll want to edit the default allowed port list in /etc/defaults/.
-Use `firewall-iptables-checkmodules` to check you have the required kernel modules available.
+Simple iptable firewall setup. We break out actual rules to thte directory /etc/firewall-iptables/rules.d/ and run them with `run-parts start|stop`. this makes thing more customizable, while remaining coherent. So basically the "firewall" init script is just symbolic.
 
 # Installation
 Copy the files in place manually from debian/ dir or build and install the .deb:
