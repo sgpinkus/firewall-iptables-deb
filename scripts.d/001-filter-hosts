@@ -1,0 +1,38 @@
+#!/bin/bash -e
+
+function do_start()
+{
+  do_stop
+  # Firewall. Add a chain so we can keep it modular.
+  iptables -t filter -N firewall_host_filter
+  iptables -A firewall_host_filter -m comment --comment "firewall-custom-iptables firewall rules"
+  iptables -A INPUT -j firewall_host_filter
+}
+
+function do_stop()
+{
+  if chain_exists filter firewall_host_filter; then
+    iptables -t filter -D INPUT -j firewall_host_filter
+    iptables -t filter -F firewall_host_filter
+    iptables -t filter -X firewall_host_filter
+  fi
+}
+
+function chain_exists()
+{
+  if [[ -n `iptables -t "$1" --list "$2" 2>/dev/null` ]]; then
+    return 0
+  fi
+  return 1
+}
+
+[[ -z "$1" || ( "$1" != "start" && "$1" != "stop" ) ]] && exit 1;
+
+case "$1" in
+  start)
+    do_start
+  ;;
+  stop)
+    do_stop
+  ;;
+esac
