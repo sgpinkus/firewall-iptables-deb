@@ -9,6 +9,15 @@ function do_start()
   [[ -z "$EXTIF" ]] && echo "Error: EXTIF undefined" && return 1
   [[ -z "$INTIF" ]] && echo "Error: INTIF undefined" && return 1
   do_stop
+  echo "   External Interface:  $EXTIF"
+  echo "   Internal Interface:  $INTIF"
+  # Enable IP forwarding since it is disabled by default since
+  # Redhat Users:  you may try changing the options in /etc/sysconfig/network from:
+  # FORWARD_IPV4=false to FORWARD_IPV4=true
+  echo "   Enabling forwarding.."
+  echo "1" > /proc/sys/net/ipv4/ip_forward
+  echo "   Enabling DynamicAddr.."
+  echo "1" > /proc/sys/net/ipv4/ip_dynaddr
   iptables -t filter -N firewall_forward_filter
   iptables -t nat -N firewall_nat_postrouting
   iptables -A firewall_forward_filter -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF."
