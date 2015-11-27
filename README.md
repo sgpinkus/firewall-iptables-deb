@@ -1,5 +1,5 @@
 # Overview
-Simple iptable firewall setup. We break out actual rules to thte directory /etc/firewall-iptables/rules.d/ and run them with `run-parts start|stop`. this makes thing more customizable, while remaining coherent. So basically the "firewall" init script is just symbolic.
+Simple iptables firewall setup packaged as a debian init script. Based off tutorial by David A. Ranch at  http://www.ecst.csuchico.edu/~dranch. We break out actual rules to directory `/etc/firewall-iptables/scripts.d/` and run them with `run-parts start|stop`. This makes thing more customizable, while still remaining coherent and easy to manage over just running a bunch of iptables add commands somewhere.
 
 # Installation
 Copy the files in place manually from debian/ dir or build and install the .deb:
