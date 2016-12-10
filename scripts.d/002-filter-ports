@@ -1,12 +1,11 @@
 #!/bin/bash -e
 # Default ports.
-#INBOUND_TCP_ALLOW=""
-#INBOUND_UDP_ALLOW=""
-INBOUND_TCP_ALLOW="ssh,http,https,5900,5901,domain,111,2049"
-INBOUND_UDP_ALLOW="domain,111,2049,bootpc,bootps"
+INBOUND_TCP_ALLOW=""
+INBOUND_UDP_ALLOW=""
 FIREWALL_LOG_REJECT=""
 # Should ~always be set to REJECT.
 FIREWALL_REJECT_RULE="REJECT"
+source /etc/default/firewall-iptables
 
 function do_start()
 {
