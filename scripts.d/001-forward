@@ -1,9 +1,9 @@
 #!/bin/bash -e
-EXTIF=""
-INTIF=""
+[ -r "$CONFFILE" ] && . "$CONFFILE"
+EXTIF=${EXTIF:-""}
+INTIF=${INTIF:-""}
 
-CONFFILE=/etc/default/firewall-iptables
-. ${CONFFILE}
+echo $EXTIF
 
 function do_start()
 {

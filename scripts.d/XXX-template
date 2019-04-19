@@ -1,4 +1,5 @@
 #!/bin/bash -e
+[ -r "$CONFFILE" ] && . "$CONFFILE"
 
 function do_start()
 {
