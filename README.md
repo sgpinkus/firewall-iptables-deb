@@ -10,3 +10,6 @@ Copy the files in place manually from debian/ dir or build and install the .deb:
 
 # Configuration
 All configuration for built in scripts is via vars in /etc/default/firewall-iptables. See the defaults.
+
+# Usage
+Should be installed as a service as above, and used like `service firewall-iptables {start|stop|restart|force-reload}`. The built-in individual scripts can also be used like `CONFFILE=./firewall-iptables.conf ./scripts.d/001-forward {start|stop}`.

@@ -17,8 +17,8 @@ DAEMON=/usr/sbin/$NAME
 DAEMON_ARGS="--options args"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
-CONFFILE=/etc/default/"$NAME"
 FIREWALL_SCRIPT_DIR=/etc/firewall-iptables/scripts.d
+CONFFILE=/etc/default/firewall-iptables
 
 # Check that networking is up.
 [[ "${NETWORKING}" = "no" ]] && exit 0
@@ -33,12 +33,12 @@ FIREWALL_SCRIPT_DIR=/etc/firewall-iptables/scripts.d
 # -ve bias by default - rejects stuff that does not pass.
 function set_firewall_rules()
 {
-  run-parts --regex="[0-9]{3}-[a-z-]*" --report --arg=start "$FIREWALL_SCRIPT_DIR"
+  CONFFILE="$CONFFILE" run-parts --regex="[0-9]{3}-[a-z-]*" --report --arg=start "$FIREWALL_SCRIPT_DIR"
 }
 
 function clear_firewall_chains()
 {
-  run-parts --regex="[0-9]{3}-[a-z-]*" --report --arg=stop "$FIREWALL_SCRIPT_DIR"
+  CONFFILE="$CONFFILE" run-parts --regex="[0-9]{3}-[a-z-]*" --report --arg=stop "$FIREWALL_SCRIPT_DIR"
 }
 
 function do_start()
