@@ -3,12 +3,10 @@
 EXTIF=${EXTIF:-""}
 INTIF=${INTIF:-""}
 
-echo $EXTIF
-
 function do_start()
 {
-  [[ -z "$EXTIF" ]] && echo "Error: EXTIF undefined" && return 1
-  [[ -z "$INTIF" ]] && echo "Error: INTIF undefined" && return 1
+  [[ -z "$EXTIF" ]] && echo "EXTIF not set. Done." && return 0
+  # [[ -z "$INTIF" ]] && echo "INTIF undefined. Done." && return 1
   do_stop
   echo "   External Interface:  $EXTIF"
   echo "   Internal Interface:  $INTIF"
