@@ -5,9 +5,9 @@
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Very basic iptables port only firewall. You have to handle hosts in another layer..
-# Description: Mostly copied from David A. Ranch (http://www.ecst.csuchico.edu/~dranch). Rewritten here as an debian Linux init script.
-#              You'll probably have to edit default port list, and interface names.
+# Short-Description: Basic iptables firewall with port forwarding.
+# Description: Based off David A. Ranch (http://www.ecst.csuchico.edu/~dranch). Rewritten here as an debian Linux init script.
+#              You'll probably have to edit default port list, and interface names. All the rules are add/rm by up/down scripts.
 ### END INIT INFO
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
