@@ -1,12 +1,9 @@
 #!/bin/bash -e
-# Default ports.
-#INBOUND_TCP_ALLOW=""
-#INBOUND_UDP_ALLOW=""
-INBOUND_TCP_ALLOW="ssh,http,https,5900,5901,domain,111,2049"
-INBOUND_UDP_ALLOW="domain,111,2049,bootpc,bootps"
-FIREWALL_LOG_REJECT=""
-# Should ~always be set to REJECT.
-FIREWALL_REJECT_RULE="REJECT"
+[ -r "$CONFFILE" ] && . "$CONFFILE"
+INBOUND_TCP_ALLOW=${INBOUND_TCP_ALLOW:-""}
+INBOUND_UDP_ALLOW=${INBOUND_UDP_ALLOW:-""}
+FIREWALL_LOG_REJECT=${FIREWALL_LOG_REJECT:-""}
+FIREWALL_REJECT_RULE=${FIREWALL_REJECT_RULE:-"REJECT"}
 
 function do_start()
 {
@@ -19,8 +16,8 @@ function do_start()
   iptables -A firewall_port_filter -i lo -j RETURN
   iptables -A firewall_port_filter -p icmp -j RETURN
   iptables -A firewall_port_filter -m state --state RELATED,ESTABLISHED -j RETURN
-  [[ -n ${INBOUND_TCP_ALLOW} ]] && iptables -A firewall_port_filter -p tcp -m multiport --destination-port $INBOUND_TCP_ALLOW -j RETURN
-  [[ -n ${INBOUND_UDP_ALLOW} ]] && iptables -A firewall_port_filter -p udp -m multiport --destination-port $INBOUND_UDP_ALLOW -j RETURN
+  [[ -n ${INBOUND_TCP_ALLOW// /,} ]] && iptables -A firewall_port_filter -p tcp -m multiport --destination-port ${INBOUND_TCP_ALLOW// /,} -j RETURN
+  [[ -n ${INBOUND_UDP_ALLOW// /,} ]] && iptables -A firewall_port_filter -p udp -m multiport --destination-port ${INBOUND_UDP_ALLOW// /,} -j RETURN
   [[ -n "${FIREWALL_LOG_REJECT}" ]] && iptables -A firewall_port_filter -j LOG --log-prefix="firewall-iptables REJECTED "
   iptables -A firewall_port_filter -j "${FIREWALL_REJECT_RULE}"
 }
