@@ -1,8 +1,9 @@
 #!/bin/bash -e
-# Interfaces only relevant to forwarding.
-EXTIF="eth0"
-INTIF="eth0.1"
+EXTIF=""
+INTIF=""
 
+CONFFILE=/etc/default/firewall-iptables
+. ${CONFFILE}
 
 function do_start()
 {
