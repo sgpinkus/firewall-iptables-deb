@@ -3,33 +3,38 @@
 EXTIF=${EXTIF:-""}
 INTIF=${INTIF:-""}
 
-echo $EXTIF
-
 function do_start()
 {
-  [[ -z "$EXTIF" ]] && echo "Error: EXTIF undefined" && return 1
-  [[ -z "$INTIF" ]] && echo "Error: INTIF undefined" && return 1
+  [[ -z "$EXTIF" ]] && echo "EXTIF not set. Done." && return 0
+  EXTIF=(${EXTIF//,/ })
+  INTIF=(${INTIF//,/ })
+  [[ ${#EXTIF[*]} -ne ${#INTIF[*]} ]] && echo "Error: #EXTIF (${#EXTIF[*]}) != #INTIF (${#INTIF[*]})" && return 1
+
+  # Dump any previous tables.
   do_stop
-  echo "   External Interface:  $EXTIF"
-  echo "   Internal Interface:  $INTIF"
+
   # Enable IP forwarding since it is disabled by default since
-  # Redhat Users:  you may try changing the options in /etc/sysconfig/network from:
-  # FORWARD_IPV4=false to FORWARD_IPV4=true
-  echo "   Enabling forwarding.."
+  # Redhat: may try changing the options in /etc/sysconfig/network from: FORWARD_IPV4=false to FORWARD_IPV4=true
+  echo "   Enabling ip_forward.."
   echo "1" > /proc/sys/net/ipv4/ip_forward
-  echo "   Enabling DynamicAddr.."
+  echo "   Enabling ip_dynaddr.."
   echo "1" > /proc/sys/net/ipv4/ip_dynaddr
   iptables -t filter -N firewall_forward_filter
   iptables -t nat -N firewall_nat_postrouting
-  iptables -A firewall_forward_filter -m comment --comment "firewall-iptables forwarding rules. External: $EXTIF, Internal: $INTIF."
-  echo "   Allowing all connections OUT and only existing and related ones IN"
-  iptables -A firewall_forward_filter -i $EXTIF -o $INTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
-  iptables -A firewall_forward_filter -i $INTIF -o $EXTIF -j ACCEPT
-  #iptables -A firewall_forward_filter -j LOG
-  echo "   Enabling SNAT (MASQUERADE) functionality on $EXTIF"
-  iptables -t nat -A firewall_nat_postrouting -o $EXTIF -j MASQUERADE
-  iptables -A FORWARD -j firewall_forward_filter
-  iptables -t nat -A POSTROUTING -j firewall_nat_postrouting
+  iptables -A firewall_forward_filter -m comment --comment "firewall-iptables forwarding rules."
+
+  for (( i=0; $i<${#EXTIF[*]}; i=$i+1 ));
+  do
+    echo "   Forwarding INTIF=${INTIF[$i]} to EXITIF=${EXTIF[$i]}"
+    echo "   Allowing all connections OUT and only existing and related ones IN"
+    iptables -A firewall_forward_filter -i ${EXTIF[$i]} -o ${INTIF[$i]} -m state --state ESTABLISHED,RELATED -j ACCEPT
+    iptables -A firewall_forward_filter -i ${INTIF[$i]} -o ${EXTIF[$i]} -j ACCEPT
+    #iptables -A firewall_forward_filter -j LOG
+    echo "   Enabling SNAT (MASQUERADE) functionality on ${EXTIF[$i]}"
+    iptables -t nat -A firewall_nat_postrouting -o ${EXTIF[$i]} -j MASQUERADE
+    iptables -A FORWARD -j firewall_forward_filter
+    iptables -t nat -A POSTROUTING -j firewall_nat_postrouting
+  done
 }
 
 function do_stop()
