@@ -21,8 +21,6 @@ function set_default_policy()
 
 function chain_exists()
 {
-  if [[ -n `iptables -t "$1" --list "$2" 2>/dev/null` ]]; then
-    return 0
-  fi
-  return 1
+  iptables -t "$1" -n --list "$2" >/dev/null 2>&1
+  return $?
 }

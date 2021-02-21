@@ -3,7 +3,7 @@ DESTDIR=/
 BINDIR=/usr/bin/
 INITDIR=/etc/init.d/
 CONFDIR=/etc/default/
-CONFFILE=$(CONFDIR)/firewall-iptables
+FIREWALL_CONFFILE=$(CONFDIR)/firewall-iptables
 FIREWALL_SCRIPT_DIR=/etc/firewall-iptables/scripts.d/
 
 .EXPORT_ALL_VARIABLES:

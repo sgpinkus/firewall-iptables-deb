@@ -11,5 +11,4 @@ Homepage: <insert the upstream URL, if relevant>
 Package: firewall-iptables
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, kmod, iptables, lsb-base
-Description: Configures a very basic iptables firewall and masq setup, as a service.
- Completely blows away your iptables chains on start, and completely resets them on stop. 
+Description: Configures a very basic iptables firewall and optionally masq setup, as a service.

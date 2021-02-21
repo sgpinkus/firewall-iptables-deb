@@ -1,5 +1,5 @@
 #!/bin/bash -e
-[ -r "$CONFFILE" ] && . "$CONFFILE"
+[ -r "$FIREWALL_CONFFILE" ] && . "$FIREWALL_CONFFILE"
 
 function do_start()
 {

@@ -1,5 +1,5 @@
 #!/bin/bash -e
-[ -r "$CONFFILE" ] && . "$CONFFILE"
+[ -r "$FIREWALL_CONFFILE" ] && . "$FIREWALL_CONFFILE"
 EXTIF=${EXTIF:-""}
 INTIF=${INTIF:-""}
 
@@ -55,10 +55,8 @@ function do_stop()
 
 function chain_exists()
 {
-  if [[ -n `iptables -t "$1" --list "$2" 2>/dev/null` ]]; then
-    return 0
-  fi
-  return 1
+  iptables -t "$1" -n --list "$2" >/dev/null 2>&1
+  return $?
 }
 
 [[ -z "$1" || ( "$1" != "start" && "$1" != "stop" ) ]] && exit 1;

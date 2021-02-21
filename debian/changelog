@@ -1,9 +1,23 @@
-firewall-iptables (1.1-3) UNRELEASED; urgency=low
+firewall-iptables (1.3) unstable; urgency=medium
+
+  [ Sam Pinkus ]
+  * Add scripts.d/002-filter-output-ports.
+
+ -- sam <sam@debian>  Sun, 21 Feb 2021 22:39:14 +1100
+
+firewall-iptables (1.2) unstable; urgency=medium
+
+  * Fix bugs, bump provate version
+
+ -- sam <sam@debian>  Sun, 21 Feb 2021 20:01:56 +1100
+
+firewall-iptables (1.1-3.1) unstable; urgency=low
 
   * Non-maintainer upload.
   * Fix forwarding not enabled bug. Update scripts.
+  * Fix bugs, bump provate version
 
- -- sam <sam@localdomain>  Fri, 27 Nov 2015 15:41:44 +1100
+ -- sam <sam@debian>  Sun, 21 Feb 2021 19:58:07 +1100
 
 firewall-iptables (1.0-1) unstable; urgency=low
 

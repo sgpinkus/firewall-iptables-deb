@@ -18,12 +18,12 @@ DAEMON_ARGS="--options args"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 FIREWALL_SCRIPT_DIR=/etc/firewall-iptables/scripts.d
-CONFFILE=/etc/default/firewall-iptables
+FIREWALL_CONFFILE=/etc/default/firewall-iptables
 
 # Check that networking is up.
 [[ "${NETWORKING}" = "no" ]] && exit 0
 # Read configuration variable file if it is present.
-[ -r "$CONFFILE" ] && . "$CONFFILE"
+[ -r "$FIREWALL_CONFFILE" ] && . "$FIREWALL_CONFFILE"
 # Load the VERBOSE setting and other rcS variables
 . /lib/init/vars.sh
 # Define LSB log_* functions. Depend on lsb-base (>= 3.2-14) to ensure that this file is present and status_of_proc is working.
@@ -33,12 +33,12 @@ CONFFILE=/etc/default/firewall-iptables
 # -ve bias by default - rejects stuff that does not pass.
 function set_firewall_rules()
 {
-  CONFFILE="$CONFFILE" run-parts --regex="[0-9]{3}-[a-z-]*" --report --arg=start "$FIREWALL_SCRIPT_DIR"
+  FIREWALL_CONFFILE="$FIREWALL_CONFFILE" run-parts --regex="[0-9]{3}-[a-z-]*" --report --arg=start "$FIREWALL_SCRIPT_DIR"
 }
 
 function clear_firewall_chains()
 {
-  CONFFILE="$CONFFILE" run-parts --regex="[0-9]{3}-[a-z-]*" --report --arg=stop "$FIREWALL_SCRIPT_DIR"
+  FIREWALL_CONFFILE="$FIREWALL_CONFFILE" run-parts --regex="[0-9]{3}-[a-z-]*" --report --arg=stop "$FIREWALL_SCRIPT_DIR"
 }
 
 function do_start()
