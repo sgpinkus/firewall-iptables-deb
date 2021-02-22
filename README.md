@@ -8,7 +8,7 @@ To install as a .deb package:
 
     git clone git@github.com:sgpinkus/firewall-iptables-deb.git
     cd firewall-iptables/
-    sudo gdebi -i build/firewall-iptables_*.deb
+    sudo gdebi build/firewall-iptables_*.deb
 
 Alternatively you can use the Makefile:
 

@@ -1,3 +1,10 @@
+firewall-iptables (1.5) unstable; urgency=medium
+
+  [ Sam Pinkus ]
+  * Fix default rule, rename a FIREWALL_LOG_REJECT -> FIREWALL_LOG_DEFAULT.
+
+ -- sam <sam@debian>  Mon, 22 Feb 2021 13:28:07 +1100
+
 firewall-iptables (1.4) unstable; urgency=medium
 
   [ Sam Pinkus ]

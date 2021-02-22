@@ -2,8 +2,8 @@
 [ -r "$FIREWALL_CONFFILE" ] && . "$FIREWALL_CONFFILE"
 INBOUND_TCP_PORT_ALLOW=${INBOUND_TCP_PORT_ALLOW:-""}
 INBOUND_UDP_PORT_ALLOW=${INBOUND_UDP_PORT_ALLOW:-""}
-FIREWALL_LOG_REJECT=${FIREWALL_LOG_REJECT:-""}
-FIREWALL_INPUT_DEFAULT_RULE=${FIREWALL_REJECT_RULE:-"REJECT"}
+FIREWALL_LOG_DEFAULT=${FIREWALL_LOG_DEFAULT:-""}
+FIREWALL_INPUT_DEFAULT_RULE=${FIREWALL_INPUT_DEFAULT_RULE:-"REJECT"}
 
 function do_start()
 {
@@ -17,7 +17,7 @@ function do_start()
   iptables -A firewall_input_port_filter -m state --state RELATED,ESTABLISHED -j RETURN # Allow all outgoing connections we start.
   [[ -n ${INBOUND_TCP_PORT_ALLOW// /,} ]] && iptables -A firewall_input_port_filter -p tcp -m multiport --destination-port ${INBOUND_TCP_PORT_ALLOW// /,} -j RETURN
   [[ -n ${INBOUND_UDP_PORT_ALLOW// /,} ]] && iptables -A firewall_input_port_filter -p udp -m multiport --destination-port ${INBOUND_UDP_PORT_ALLOW// /,} -j RETURN
-  [[ -n "${FIREWALL_LOG_REJECT}" ]] && iptables -A firewall_input_port_filter -j LOG --log-prefix="firewall-iptables REJECTED "
+  [[ -n "${FIREWALL_LOG_DEFAULT}" ]] && iptables -A firewall_input_port_filter -j LOG --log-prefix="firewall-iptables REJECTED "
   iptables -A firewall_input_port_filter -j "${FIREWALL_INPUT_DEFAULT_RULE}"
 }
 
