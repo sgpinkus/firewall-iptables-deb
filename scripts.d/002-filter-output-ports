@@ -3,7 +3,7 @@
 OUTBOUND_TCP_ALLOW=${OUTBOUND_TCP_ALLOW:-""}
 OUTBOUND_UDP_ALLOW=${OUTBOUND_UDP_ALLOW:-""}
 FIREWALL_LOG_REJECT=${FIREWALL_LOG_REJECT:-""}
-FIREWALL_REJECT_RULE=${FIREWALL_REJECT_RULE:-"REJECT"}
+FIREWALL_OUTPUT_DEFAULT_RULE=${FIREWALL_REJECT_RULE:-"REJECT"}
 
 function do_start()
 {
@@ -18,7 +18,7 @@ function do_start()
   [[ -n ${OUTBOUND_TCP_ALLOW// /,} ]] && iptables -A firewall_output_port_filter -p tcp -m multiport --destination-port ${OUTBOUND_TCP_ALLOW// /,} -j RETURN
   [[ -n ${OUTBOUND_UDP_ALLOW// /,} ]] && iptables -A firewall_output_port_filter -p udp -m multiport --destination-port ${OUTBOUND_UDP_ALLOW// /,} -j RETURN
   [[ -n "${FIREWALL_LOG_REJECT}" ]] && iptables -A firewall_output_port_filter -j LOG --log-prefix="firewall-iptables REJECTED "
-  iptables -A firewall_output_port_filter -j "${FIREWALL_REJECT_RULE}"
+  iptables -A firewall_output_port_filter -j "${FIREWALL_OUTPUT_DEFAULT_RULE}"
 }
 
 function do_stop()

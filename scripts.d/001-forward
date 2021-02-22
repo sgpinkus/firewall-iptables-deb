@@ -23,17 +23,18 @@ function do_start()
   iptables -t nat -N firewall_nat_postrouting
   iptables -A firewall_forward_filter -m comment --comment "firewall-iptables forwarding rules."
 
-  for (( i=0; $i<${#INTIF[*]}; i=$i+1 ));
-  do
+  for (( i=0; $i<${#INTIF[*]}; i=$i+1 )); do
     E=${EXTIF[$i]:-${EXTIF[-1]}} # If num EXTIF < num INTIF use the last EXTIF
     I=${INTIF[$i]}
     echo "   Forwarding INTIF=$I to EXITIF=$E"
     # echo "   Allowing all connections OUT and only existing and related ones IN"
-    iptables -A firewall_forward_filter -i $I -o $E -j ACCEPT
-    iptables -A firewall_forward_filter -i $E -o $I -m state --state ESTABLISHED,RELATED -j ACCEPT
+    iptables -A firewall_forward_filter -i "$I" -o "$E" -j ACCEPT
+    iptables -A firewall_forward_filter -i "$E" -o "$I" -m state --state ESTABLISHED,RELATED -j ACCEPT
     #iptables -A firewall_forward_filter -j LOG
+  done
+  for E in "${EXTIF[@]}"; do
     echo "   Enabling SNAT (MASQUERADE) functionality on $E"
-    iptables -t nat -A firewall_nat_postrouting -o $E -j MASQUERADE
+    iptables -t nat -A firewall_nat_postrouting -o "$E" -j MASQUERADE
   done
   iptables -A FORWARD -j firewall_forward_filter
   iptables -t nat -A POSTROUTING -j firewall_nat_postrouting
