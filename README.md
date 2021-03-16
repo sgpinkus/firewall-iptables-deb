@@ -26,10 +26,13 @@ All configuration for built in scripts is via vars in /etc/default/firewall-ipta
 # Debian Packaging Notes
 Build a .deb file:
 
-    git clone git@github.com:sgpinkus/firewall-iptables-deb.git
-    cd firewall-iptables/
-    gbp dch
-    dch --release
-    dpkg-buildpackage -b -uc -us
-    git rm build/*.deb
-    mv ../firewall-iptables_*_all.deb build/
+```
+git clone git@github.com:sgpinkus/firewall-iptables-deb.git
+cd firewall-iptables/
+gbp dch
+dch --release
+dpkg-buildpackage -b -uc -us
+git rm build/*.deb
+mv ../firewall-iptables_*_all.deb build/
+git add build/
+```

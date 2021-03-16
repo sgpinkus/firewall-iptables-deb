@@ -1,3 +1,11 @@
+firewall-iptables (1.6) unstable; urgency=medium
+
+  [ Sam Pinkus ]
+  * misc.
+  * Change default config.
+
+ -- sam <sam@debian>  Wed, 17 Mar 2021 00:51:21 +1100
+
 firewall-iptables (1.5) unstable; urgency=medium
 
   [ Sam Pinkus ]
