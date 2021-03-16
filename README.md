@@ -31,5 +31,5 @@ Build a .deb file:
     gbp dch
     dch --release
     dpkg-buildpackage -b -uc -us
-    git rm build/*
+    git rm build/*.deb
     mv ../firewall-iptables_*_all.deb build/
