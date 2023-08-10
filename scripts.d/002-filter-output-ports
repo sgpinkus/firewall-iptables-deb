@@ -1,6 +1,6 @@
 #!/bin/bash -e
 [ -r "$FIREWALL_CONFFILE" ] && . "$FIREWALL_CONFFILE"
-OUTBOUND_TCP_ALLOW=${OUTBOUND_TCP_ALLOW:-""}
+OUTBOUND_TCP_PORT_ALLOW=${OUTBOUND_TCP_PORT_ALLOW:-""}
 OUTBOUND_UDP_ALLOW=${OUTBOUND_UDP_ALLOW:-""}
 FIREWALL_LOG_DEFAULT=${FIREWALL_LOG_DEFAULT:-""}
 FIREWALL_OUTPUT_DEFAULT_RULE=${FIREWALL_OUTPUT_DEFAULT_RULE:-"RETURN"}
@@ -15,8 +15,8 @@ function do_start()
   iptables -A firewall_output_port_filter -i lo -j RETURN  # We can talk to ourselves freely.
   iptables -A firewall_output_port_filter -p icmp -j RETURN # TODO: rules.
   iptables -A firewall_output_port_filter -m state --state RELATED,ESTABLISHED -j RETURN # Allow all incoming traffic we start.
-  [[ -n ${OUTBOUND_TCP_ALLOW// /,} ]] && iptables -A firewall_output_port_filter -p tcp -m multiport --destination-port ${OUTBOUND_TCP_ALLOW// /,} -j RETURN
-  [[ -n ${OUTBOUND_UDP_ALLOW// /,} ]] && iptables -A firewall_output_port_filter -p udp -m multiport --destination-port ${OUTBOUND_UDP_ALLOW// /,} -j RETURN
+  [[ -n ${OUTBOUND_TCP_PORT_ALLOW// /,} ]] && iptables -A firewall_output_port_filter -p tcp -m multiport --destination-port ${OUTBOUND_TCP_PORT_ALLOW// /,} -j RETURN
+  [[ -n ${OUTBOUND_UDP_PORT_ALLOW// /,} ]] && iptables -A firewall_output_port_filter -p udp -m multiport --destination-port ${OUTBOUND_UDP_PORT_ALLOW// /,} -j RETURN
   [[ -n "${FIREWALL_LOG_DEFAULT}" ]] && iptables -A firewall_output_port_filter -j LOG --log-prefix="firewall-iptables REJECTED "
   iptables -A firewall_output_port_filter -j "${FIREWALL_OUTPUT_DEFAULT_RULE}"
 }
