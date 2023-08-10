@@ -1,3 +1,10 @@
+firewall-iptables (1.7) unstable; urgency=medium
+
+  [ Sam Pinkus ]
+  * Fix: Miss-named OUTBOUND_TCP_PORT_ALLOW in script.
+
+ -- sam <sam@mail.localdomain>  Thu, 10 Aug 2023 14:48:50 +1000
+
 firewall-iptables (1.6) unstable; urgency=medium
 
   [ Sam Pinkus ]
