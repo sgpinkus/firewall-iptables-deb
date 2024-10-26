@@ -1,7 +1,7 @@
 # Overview
 Simple iptables firewall setup packaged as a debian init script. Based off tutorial by David A. Ranch at  http://www.ecst.csuchico.edu/~dranch. Breaks out actual rules scripts in directory `/etc/firewall-iptables/scripts.d/` which are run in alphabetical order on start|stop. This makes things more customizable and easy to manage.
 
-*Don't actually use this for a Linux firewall in production.* There are much better iptables frontends for managing and creating firewalls available now days like firewalld and ufw.
+*Consider firewalld or ufw before using this*.
 
 # Installation
 To install as a .deb package:
