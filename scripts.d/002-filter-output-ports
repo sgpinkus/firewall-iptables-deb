@@ -12,7 +12,7 @@ function do_start()
   iptables -t filter -N firewall_output_port_filter
   iptables -A firewall_output_port_filter -m comment --comment "firewall-iptables firewall output port rules"
   iptables -A OUTPUT -j firewall_output_port_filter
-  iptables -A firewall_output_port_filter -i lo -j RETURN  # We can talk to ourselves freely.
+  iptables -A firewall_output_port_filter -o lo -j RETURN  # We can talk to ourselves freely.
   iptables -A firewall_output_port_filter -p icmp -j RETURN # TODO: rules.
   iptables -A firewall_output_port_filter -m state --state RELATED,ESTABLISHED -j RETURN # Allow all incoming traffic we start.
   [[ -n ${OUTBOUND_TCP_PORT_ALLOW// /,} ]] && iptables -A firewall_output_port_filter -p tcp -m multiport --destination-port ${OUTBOUND_TCP_PORT_ALLOW// /,} -j RETURN
