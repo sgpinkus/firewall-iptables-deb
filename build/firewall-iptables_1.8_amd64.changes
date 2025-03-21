@@ -1,0 +1,27 @@
+Format: 1.8
+Date: Fri, 21 Mar 2025 17:59:56 +1000
+Source: firewall-iptables
+Binary: firewall-iptables
+Architecture: all
+Version: 1.8
+Distribution: unstable
+Urgency: medium
+Maintainer: Sam Pinkus <sam@localhost>
+Changed-By: sam <sgpinkus@gmail.com>
+Description:
+ firewall-iptables - Configures a very basic iptables firewall and optionally masq set
+Changes:
+ firewall-iptables (1.8) unstable; urgency=medium
+ .
+   [ Sam Pinkus ]
+   * Rm uneeded debian build files.
+   * Fix firewall_output_port_filter chain rule.
+Checksums-Sha1:
+ 51394f1abcbffc77c01cb037a30e92ee458b667d 8196 firewall-iptables_1.8_all.deb
+ 3e472785c91b20f10cd2860e2509e267d1923c8f 4904 firewall-iptables_1.8_amd64.buildinfo
+Checksums-Sha256:
+ 6c4b68968f12d5054998fce2bdc23ec3e6f730ad968f9e24befb5addbe258e81 8196 firewall-iptables_1.8_all.deb
+ aeeaaed35aaea49a4b2698d9909981842349c274752c84ff91912e5e12528b65 4904 firewall-iptables_1.8_amd64.buildinfo
+Files:
+ 98a91ef3239c527d2b926bb7dcf59454 8196 util extra firewall-iptables_1.8_all.deb
+ 0342282f120558c7e83818328e21ceb6 4904 util extra firewall-iptables_1.8_amd64.buildinfo
