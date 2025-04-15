@@ -4,7 +4,7 @@ firewall-iptables (1.8) unstable; urgency=medium
   * Rm uneeded debian build files.
   * Fix firewall_output_port_filter chain rule.
 
- -- sam <sgpinkus@gmail.com>  Wed, 09 Apr 2025 23:22:17 +1000
+ -- sam <sgpinkus@gmail.com>  Tue, 15 Apr 2025 22:38:56 +1000
 
 firewall-iptables (1.7) unstable; urgency=medium
 
