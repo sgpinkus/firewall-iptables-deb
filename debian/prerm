@@ -1,0 +1,14 @@
+#!/bin/bash -e
+case "$1" in
+remove|upgrade|deconfigure)
+    systemctl stop firewall-iptables.service || true
+    ;;
+failed-upgrade)
+    ;;
+*)
+    echo "prerm called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+#DEBHELPER#
+exit 0

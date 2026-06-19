@@ -1,0 +1,16 @@
+#!/bin/bash -e
+case "$1" in
+configure)
+    systemctl daemon-reload || true
+    systemctl enable firewall-iptables.service || true
+    systemctl start firewall-iptables.service || true
+    ;;
+abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+*)
+    echo "postinst called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+#DEBHELPER#
+exit 0

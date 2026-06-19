@@ -18,7 +18,8 @@ install:
 	mkdir -p $(DESTDIR)/$(BINDIR)
 	mkdir -p $(DESTDIR)/$(CONFDIR)
 	mkdir -p $(DESTDIR)/$(FIREWALL_SCRIPT_DIR)
-	cp firewall-iptables $(DESTDIR)$(INITDIR)
+	mkdir -p $(DESTDIR)/usr/lib/systemd/system/
+	cp firewall-iptables.service $(DESTDIR)/usr/lib/systemd/system/
 	cp firewall-iptables-checkmodules $(DESTDIR)/$(BINDIR)/
 	cp -a scripts.d/* $(DESTDIR)/$(FIREWALL_SCRIPT_DIR)
 	cp firewall-iptables.conf $(DESTDIR)/$(CONFDIR)/firewall-iptables
