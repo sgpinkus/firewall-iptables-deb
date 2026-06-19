@@ -1,0 +1,13 @@
+[Unit]
+Description=Basic iptables firewall with port forwarding
+After=network.target remote-fs.target syslog.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=FIREWALL_CONFFILE=/etc/default/firewall-iptables
+ExecStart=/bin/run-parts --regex=[0-9]{3}-[a-z-]* --report --arg=start /etc/firewall-iptables/scripts.d
+ExecStop=/bin/run-parts --regex=[0-9]{3}-[a-z-]* --report --arg=stop /etc/firewall-iptables/scripts.d
+
+[Install]
+WantedBy=multi-user.target
