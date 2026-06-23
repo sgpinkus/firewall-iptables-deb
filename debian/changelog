@@ -1,10 +1,18 @@
+firewall-iptables (1.9) unstable; urgency=medium
+
+  [ Sam Pinkus ]
+  * Fix broken default.
+  * Add service file.
+
+ -- sam <sam@localhost>  Tue, 23 Jun 2026 19:56:26 +0000
+
 firewall-iptables (1.8) unstable; urgency=medium
 
   [ Sam Pinkus ]
   * Rm uneeded debian build files.
   * Fix firewall_output_port_filter chain rule.
 
- -- sam <sam@localhost>  Fri, 19 Jun 2026 11:13:17 +0000
+ -- sam <sam@localhost>  Tue, 23 Jun 2026 19:54:15 +0000
 
 firewall-iptables (1.7) unstable; urgency=medium
 
